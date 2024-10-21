@@ -19,3 +19,33 @@ ERROR: 2024/10/21 09:59:17 logger.go:82: Failed to create user: pq: duplicate ke
 INFO: 2024/10/21 10:33:59 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 11:26:49 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 12:01:06 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 13:36:15 logger.go:50: Server started on port 8081
+ERROR: 2024/10/21 13:39:21 logger.go:82: User validation failed!Username is empty!
+ERROR: 2024/10/21 13:45:29 logger.go:82: Failed to parse id in 'DeleteUser': strconv.Atoi: parsing "id=2635569": invalid syntax
+ERROR: 2024/10/21 13:46:08 logger.go:82: Failed to parse id in 'DeleteUser': strconv.Atoi: parsing "id=2635569": invalid syntax
+ERROR: 2024/10/21 13:51:43 logger.go:82: Ошибка декодирования JSON: EOF
+ERROR: 2024/10/21 13:52:28 logger.go:82: Пользователь не найден: sql: no rows in result set
+ERROR: 2024/10/21 13:53:18 logger.go:82: Пользователь не найден: sql: no rows in result set
+ERROR: 2024/10/21 13:53:24 logger.go:82: Пользователь не найден: sql: no rows in result set
+ERROR: 2024/10/21 13:54:17 logger.go:82: Пользователь не найден: sql: no rows in result set
+INFO: 2024/10/21 13:59:30 logger.go:50: Server started on port 8081
+ERROR: 2024/10/21 13:59:44 logger.go:82: Пользователь не найден: sql: no rows in result set
+ERROR: 2024/10/21 13:59:53 logger.go:82: Пользователь не найден: sql: no rows in result set
+INFO: 2024/10/21 14:07:18 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:07:30 logger.go:50: Проверка пользователя с email: musadaevmagomed@gmail.com
+INFO: 2024/10/21 14:07:30 logger.go:50: Проверка пользователя с phone: 
+INFO: 2024/10/21 14:10:24 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:10:32 logger.go:50: Проверка пользователя с email: musadaevmagomed@gmail.com
+INFO: 2024/10/21 14:10:32 logger.go:50: Проверка пользователя с phone: 
+ERROR: 2024/10/21 14:10:32 logger.go:82: Пользователь не найден: sql: no rows in result set
+INFO: 2024/10/21 14:11:20 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:11:30 logger.go:50: Проверка пользователя с email: musadaevmagomed@gmail.com
+INFO: 2024/10/21 14:11:31 logger.go:50: Проверка пользователя с phone: 
+INFO: 2024/10/21 14:11:31 logger.go:50: Проверка пользователя с password: 1233302mAga+!
+ERROR: 2024/10/21 14:11:31 logger.go:82: Пользователь не найден: sql: no rows in result set
+INFO: 2024/10/21 14:13:49 logger.go:50: Server started on port 8081
+ERROR: 2024/10/21 14:14:00 logger.go:82: Пользователь не найден: sql: Scan error on column index 8, name "phone": sql/driver: couldn't convert "+5566778899" into type bool
+INFO: 2024/10/21 14:14:38 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:42:57 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:46:17 logger.go:50: Server started on port 8081
+ERROR: 2024/10/21 14:46:51 logger.go:82: Пользователь не найден: sql: no rows in result set

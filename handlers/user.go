@@ -4,7 +4,6 @@ import (
 	"Cloud/dataBase"
 	"Cloud/logger"
 	"Cloud/models"
-	"Cloud/security"
 	"Cloud/utils"
 	"database/sql"
 	"encoding/json"
@@ -32,7 +31,7 @@ func CreateUser(db *sql.DB) http.HandlerFunc {
 		//Декодирование JSON из тела запроса
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
-			logger.Error("Failed to connect to database: " + err.Error())
+			logger.Error("Ошибка декодирования JSON: " + err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -49,7 +48,7 @@ func CreateUser(db *sql.DB) http.HandlerFunc {
 		user.FromDateUpdate = user.FromDateCreate
 
 		// Хеширование пароля перед сохранением
-		user.Password, err = security.HashPassword(user.Password)
+		user.Password, err = utils.HashPassword(user.Password)
 		if err != nil {
 			logger.Error("Failed to hash password: " + err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -220,7 +219,7 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 
 		// Хеширование пароля если он был изменён
 		if user.Password != "" {
-			user.Password, err = security.HashPassword(user.Password)
+			user.Password, err = utils.HashPassword(user.Password)
 			if err != nil {
 				logger.Error("Failed to hash password: " + err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
