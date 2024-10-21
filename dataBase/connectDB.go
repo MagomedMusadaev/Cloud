@@ -3,6 +3,7 @@ package dataBase
 import (
 	"Cloud/logger"
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 )
@@ -14,10 +15,10 @@ type ErrorResponse struct {
 // ConnectDB устанавливает подключение к базе данных PostgreSQL и возвращает объект DB.
 // @Summary Подключение к базе данных PostgreSQL
 // @Description Устанавливает соединение с базой данных PostgreSQL с использованием строки подключения.
-func ConnectDB() *sql.DB {
+func ConnectDB(host, port, user, password, dbname string) *sql.DB {
 	// Строка подключения к базе данных PostgreSQL
-	connStr := "host=ep-twilight-breeze-a59htcxo.us-east-2.aws.neon.tech port=5432 " +
-		"user=CloudPostgres_owner password=3EICk0orSfnT dbname=CloudPostgres sslmode=require"
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=require",
+		host, port, user, password, dbname)
 
 	// Открытие подключения к базе данных
 	db, err := sql.Open("postgres", connStr)
