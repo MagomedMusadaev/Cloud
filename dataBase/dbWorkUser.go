@@ -179,3 +179,23 @@ func DBDeleteUser(db *sql.DB, userID int) error {
 
 	return err
 }
+
+func FindUserByEmail(db *sql.DB, email string) (*models.User, error) {
+
+	var user models.User
+	query := `SELECT id, name, password FROM users WHERE email = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+
+	err := db.QueryRow(query, email).Scan(&user.ID, &user.Name, &user.Password)
+
+	return &user, err
+}
+
+func FindUserByPhone(db *sql.DB, phone string) (*models.User, error) {
+
+	var user models.User
+	query := `SELECT id, name, password FROM users WHERE phone = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+
+	err := db.QueryRow(query, phone).Scan(&user.ID, &user.Name, &user.Password)
+
+	return &user, err
+}
