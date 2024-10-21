@@ -91,7 +91,19 @@ func InitializeRoutes(db *sql.DB) *mux.Router {
 	// @Router /login [post]
 	r.HandleFunc("/login", auth.LoginUser(db)).Methods("POST")
 
+	// Обновление токена
+	// @Summary Обновление access токена
+	// @Description Позволяет обновить access токен с использованием refresh токена.
+	// @Accept json
+	// @Produce json
+	// @Success 200 {string} string "Токен успешно обновлен"
+	// @Failure 401 {string} string "Недействительный токен"
+	// @Router /refresh [post]
+	r.HandleFunc("/refresh-token", auth.RefreshTokenHandler).Methods("POST")
+
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	//r.Handle("/protected", auth.JWTMiddleware(http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
 	return r
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"time"
 )
 
 type LoginRequest struct {
@@ -58,15 +59,33 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Группируем данные для возврата
-		response := map[string]interface{}{
-			"id":   user.ID,
-			"name": user.Name,
+		// Генерация токенов
+		accessToken, err := GenerateAccessToken(*user)
+		if err != nil {
+			logger.Error("Ошибка создания токена: " + err.Error())
+			http.Error(w, "Ошибка создания токена", http.StatusInternalServerError)
+			return
 		}
 
-		// Успешная авторизация
+		refreshToken, err := GenerateRefreshToken(*user)
+		if err != nil {
+			logger.Error("Ошибка генерации refresh токена: " + err.Error())
+			http.Error(w, "Ошибка генерации refresh токена", http.StatusInternalServerError)
+			return
+		}
+
+		// Сохранение refresh токена в куки
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Expires:  time.Now().Add(30 * 24 * time.Hour), // Время жизни куки
+			HttpOnly: false,                               // Защита от доступа через JavaScript
+			Secure:   false,                               // Убедитесь, что вы используете HTTPS
+			Path:     "/",                                 // Путь для куки
+		})
+
+		// Возвращаем access токен
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
 	}
 }
