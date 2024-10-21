@@ -19,10 +19,10 @@ import (
 // @Failure 400 {object} ErrorResponse
 // @Router /user [post]
 func DBCreateUser(db *sql.DB, user *models.User) error {
-	query := `INSERT INTO users (name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned) 
-			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	query := `INSERT INTO users (name, phone, email, password, from_date_create, from_date_update) 
+			  VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 
-	err := db.QueryRow(query, user.Name, user.Phone, user.Email, user.Password, user.FromDateCreate, user.FromDateUpdate, user.IsDeleted, user.IsBanned).Scan(&user.ID)
+	err := db.QueryRow(query, user.Name, user.Phone, user.Email, user.Password, user.FromDateCreate, user.FromDateUpdate).Scan(&user.ID)
 
 	return err
 }

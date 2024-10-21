@@ -34,9 +34,11 @@ func ValidateJWT(tokenStr string) (*models.Claims, error) {
 		return jwtKey, nil
 	})
 
-	if err != nil || token.Valid {
+	if err != nil || !token.Valid {
+		logger.Error("Ошибка при парсинге токена: " + err.Error())
 		return nil, err
 	}
+
 	return claims, nil
 }
 
@@ -56,7 +58,7 @@ func GenerateRefreshToken(user models.User) (string, error) {
 func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Извлекаем рефреш токен из куки запроса
-	cookie, err := r.Cookie("token")
+	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		logger.Error("Отсутствует рефреш токен: " + err.Error())
 		http.Error(w, "Отсутствует рефреш токен", http.StatusUnauthorized)
@@ -66,7 +68,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Валидация рефреш токена
 	// Если токен недействителен или истёк, сервер снова возвращает ошибку 401 и логирует информацию о проблеме.
 	claims, err := ValidateJWT(cookie.Value)
-	if err != nil {
+	if err != nil || claims == nil {
 		logger.Error("Недействительный рефреш токен: " + err.Error())
 		http.Error(w, "Недействительный рефреш токен", http.StatusUnauthorized)
 		return

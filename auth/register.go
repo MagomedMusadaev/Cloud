@@ -30,7 +30,7 @@ func RegisterUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Установка даты и создания обновления
+		// Установка даты и создания обновления, установка статуса IsDeleted и IsBanned
 		user.FromDateCreate = time.Now().Format(time.RFC3339)
 		user.FromDateUpdate = user.FromDateCreate
 
