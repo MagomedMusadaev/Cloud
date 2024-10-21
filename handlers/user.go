@@ -103,18 +103,18 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// GetAllUsers retrieves a paginated list of users.
-// @Summary Get all users
-// @Description Retrieve a list of users with optional filters
+// GetAllUsers получает список пользователей с постраничной навигацией и фильтрами.
+// @Summary Получить всех пользователей
+// @Description Получение списка пользователей с возможностью фильтрации по полям
 // @Tags users
 // @Produce json
-// @Param page query int false "Page number"
-// @Param limit query int false "Number of users per page"
-// @Param name query string false "Filter by name"
-// @Param email query string false "Filter by email"
-// @Param phone query string false "Filter by phone"
-// @Success 200 {array} models.User "List of users"
-// @Failure 400 {string} string "Invalid request"
+// @Param page query int false "Номер страницы"
+// @Param limit query int false "Количество пользователей на странице"
+// @Param name query string false "Фильтр по имени"
+// @Param email query string false "Фильтр по email"
+// @Param phone query string false "Фильтр по телефону"
+// @Success 200 {array} models.User "Список пользователей"
+// @Failure 400 {string} string "Некорректный запрос"
 // @Router /users [get]
 func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +123,17 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 		name := r.URL.Query().Get("name")
 		email := r.URL.Query().Get("email")
 		phone := r.URL.Query().Get("phone")
+		searchWord := r.URL.Query().Get("search")
+
+		if name == "" {
+			name = searchWord
+		}
+		if email == "" {
+			email = searchWord
+		}
+		if phone == "" {
+			phone = searchWord
+		}
 
 		// Устанавливаем значения по умолчанию
 		page := 1

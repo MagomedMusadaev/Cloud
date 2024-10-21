@@ -16,7 +16,8 @@ type ErrorResponse struct {
 // @Description Устанавливает соединение с базой данных PostgreSQL с использованием строки подключения.
 func ConnectDB() *sql.DB {
 	// Строка подключения к базе данных PostgreSQL
-	connStr := "host=ep-twilight-breeze-a59htcxo.us-east-2.aws.neon.tech port=5432 user=CloudPostgres_owner password=3EICk0orSfnT dbname=CloudPostgres sslmode=require"
+	connStr := "host=ep-twilight-breeze-a59htcxo.us-east-2.aws.neon.tech port=5432 " +
+		"user=CloudPostgres_owner password=3EICk0orSfnT dbname=CloudPostgres sslmode=require"
 
 	// Открытие подключения к базе данных
 	db, err := sql.Open("postgres", connStr)

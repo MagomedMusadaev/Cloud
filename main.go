@@ -10,6 +10,7 @@ import (
 	"Cloud/logger"
 	"Cloud/routes"
 	"net/http"
+	"sync"
 )
 
 // @Summary Основная точка входа приложения.
@@ -19,6 +20,9 @@ import (
 // @Failure 500 {string} string "Не удалось запустить сервер"
 // @Router / [get]
 func main() {
+
+	wg := sync.WaitGroup{}
+
 	// Инициализация логирования
 	logger.Logging()
 
@@ -30,9 +34,19 @@ func main() {
 	router := routes.InitializeRoutes(db)
 
 	// Запуск сервера на порту 8081
-	if err := http.ListenAndServe(":8081", router); err != nil {
-		logger.Error("Failed to start server: " + err.Error())
-	}
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		if err := http.ListenAndServe(":8081", router); err != nil {
+			logger.Error("Failed to start server: " + err.Error())
+		}
+	}()
+
+	// Логируем запуск сервера
+	logger.Info("Server started on port 8081")
+
+	// Ожидаем завершения всех горутин
+	wg.Wait()
 
 	// Логируем остановку сервера
 	logger.Error("Server has stopped.")
