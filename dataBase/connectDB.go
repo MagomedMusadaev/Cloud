@@ -3,8 +3,11 @@ package dataBase
 import (
 	"Cloud/logger"
 	"database/sql"
+	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
+	"os"
 )
 
 type ErrorResponse struct {
@@ -16,8 +19,19 @@ type ErrorResponse struct {
 // @Description Устанавливает соединение с базой данных PostgreSQL с использованием строки подключения.
 func ConnectDB() *sql.DB {
 	// Строка подключения к базе данных PostgreSQL
-	connStr := "host=ep-twilight-breeze-a59htcxo.us-east-2.aws.neon.tech port=5432 " +
-		"user=CloudPostgres_owner password=3EICk0orSfnT dbname=CloudPostgres sslmode=require"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASS")
+	dbname := os.Getenv("POSTGRES_NAME")
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=require",
+		host, port, user, password, dbname)
 
 	// Открытие подключения к базе данных
 	db, err := sql.Open("postgres", connStr)

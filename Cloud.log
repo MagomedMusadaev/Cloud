@@ -19,3 +19,9 @@ ERROR: 2024/10/21 09:59:17 logger.go:82: Failed to create user: pq: duplicate ke
 INFO: 2024/10/21 10:33:59 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 11:26:49 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 12:01:06 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 13:26:02 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 13:27:28 logger.go:50: Server started on port 8081
+ERROR: 2024/10/21 13:46:15 logger.go:82: Failed to ping database!dial tcp: lookup port=: no such host
+INFO: 2024/10/21 13:49:05 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:16:26 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:16:48 logger.go:50: Server started on port 8081
