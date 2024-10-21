@@ -70,6 +70,7 @@ func ConnectMongoDB() *mongo.Client {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	// Создание нового клиента
+	//TODO надо поменять метод, если он зачеркнут , значит он старый и его скоро могут удалить
 	client, err := mongo.NewClient(clientOptions)
 	if err != nil {
 		log.Fatal("Ошибка создания клиента MongoDB:", err)
