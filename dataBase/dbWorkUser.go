@@ -9,9 +9,16 @@ import (
 	"strings"
 )
 
-// Создание пользователя в db
+// DBCreateUser создает нового пользователя в базе данных.
+// @Summary Create a new user
+// @Description Adds a new user to the database with the provided details.
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User details"
+// @Success 201 {object} models.User
+// @Failure 400 {object} ErrorResponse
+// @Router /user [post]
 func DBCreateUser(db *sql.DB, user *models.User) error {
-
 	query := `INSERT INTO users (name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned) 
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 
@@ -20,11 +27,18 @@ func DBCreateUser(db *sql.DB, user *models.User) error {
 	return err
 }
 
-// Получение пользователя из db
+// DBGetUser получает пользователя по его ID из базы данных.
+// @Summary Get user by ID
+// @Description Retrieves a user from the database by their ID.
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.User
+// @Failure 404 {object} ErrorResponse
+// @Router /user/{id} [get]
 func DBGetUser(db *sql.DB, userID int) (*models.User, error) {
-
 	var user models.User
-	query := `SELECT id, name, phone, email,password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE id = $1`
+	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE id = $1`
 
 	err := db.QueryRow(query, userID).Scan(&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password, &user.FromDateCreate, &user.FromDateUpdate, &user.IsDeleted, &user.IsBanned)
 	if err != nil {
@@ -32,10 +46,19 @@ func DBGetUser(db *sql.DB, userID int) (*models.User, error) {
 		return nil, err
 	}
 	return &user, nil
-
 }
 
-// Получение пользователей, с учётом лимита на страницу и смещения страницы, из db
+// DBGetAllUsers получает всех пользователей с учетом фильтров, лимита и смещения.
+// @Summary Get all users
+// @Description Retrieves all users from the database with optional filters, limit, and offset.
+// @Accept json
+// @Produce json
+// @Param filters query string false "Filter users by fields"
+// @Param limit query int false "Limit number of users"
+// @Param offset query int false "Offset for pagination"
+// @Success 200 {array} models.User
+// @Failure 500 {object} ErrorResponse
+// @Router /users [get]
 func DBGetAllUsers(db *sql.DB, filters map[string]string, limit, offset int) ([]*models.User, error) {
 	// Базовый SQL-запрос
 	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE TRUE`
@@ -82,7 +105,15 @@ func DBGetAllUsers(db *sql.DB, filters map[string]string, limit, offset int) ([]
 	return users, nil
 }
 
-// Изменение данных о пользователе в db
+// DBUpdateUser обновляет данные о пользователе в базе данных.
+// @Summary Update user
+// @Description Updates the user details in the database.
+// @Accept json
+// @Produce json
+// @Param user body models.User true "Updated user details"
+// @Success 204
+// @Failure 400 {object} ErrorResponse
+// @Router /user [put]
 func DBUpdateUser(db *sql.DB, user *models.User) error {
 	query := `UPDATE users SET `
 	args := []interface{}{}
@@ -132,7 +163,15 @@ func DBUpdateUser(db *sql.DB, user *models.User) error {
 	return err
 }
 
-// Удаление пользователя из db
+// DBDeleteUser удаляет пользователя из базы данных по его ID.
+// @Summary Delete user
+// @Description Deletes a user from the database by their ID.
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 204
+// @Failure 404 {object} ErrorResponse
+// @Router /user/{id} [delete]
 func DBDeleteUser(db *sql.DB, userID int) error {
 	query := `DELETE FROM users WHERE id = $1`
 

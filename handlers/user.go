@@ -14,9 +14,19 @@ import (
 	"time"
 )
 
+// CreateUser handles user creation.
+// @Summary Create a new user
+// @Description Create a new user with the provided details
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User data"
+// @Success 201 {string} string "User created successfully"
+// @Failure 400 {string} string "Invalid request format"
+// @Failure 500 {string} string "Internal server error"
+// @Router /users [post]
 func CreateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		var user models.User
 
 		//Декодирование JSON из тела запроса
@@ -60,9 +70,18 @@ func CreateUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// GetUser retrieves a user by ID.
+// @Summary Get a user by ID
+// @Description Retrieve a user using their ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} models.User "User data"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "User not found"
+// @Router /users/{id} [get]
 func GetUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		params := mux.Vars(r)
 		userID, err := strconv.Atoi(params["id"])
 		if err != nil {
@@ -84,14 +103,37 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// GetAllUsers получает список пользователей с постраничной навигацией и фильтрами.
+// @Summary Получить всех пользователей
+// @Description Получение списка пользователей с возможностью фильтрации по полям
+// @Tags users
+// @Produce json
+// @Param page query int false "Номер страницы"
+// @Param limit query int false "Количество пользователей на странице"
+// @Param name query string false "Фильтр по имени"
+// @Param email query string false "Фильтр по email"
+// @Param phone query string false "Фильтр по телефону"
+// @Success 200 {array} models.User "Список пользователей"
+// @Failure 400 {string} string "Некорректный запрос"
+// @Router /users [get]
 func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		pageStr := r.URL.Query().Get("page")
 		limitStr := r.URL.Query().Get("limit")
 		name := r.URL.Query().Get("name")
 		email := r.URL.Query().Get("email")
 		phone := r.URL.Query().Get("phone")
+		searchWord := r.URL.Query().Get("search")
+
+		if name == "" {
+			name = searchWord
+		}
+		if email == "" {
+			email = searchWord
+		}
+		if phone == "" {
+			phone = searchWord
+		}
 
 		// Устанавливаем значения по умолчанию
 		page := 1
@@ -111,7 +153,6 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		//Для первой страницы: offset = (1 - 1) * 5 = 0, что означает, что записи будут начинаться с первого пользователя.
 		//Для первой страницы: offset = (1 - 1) * 5 = 0, что означает, что записи будут начинаться с первого пользователя.
 		offset := (page - 1) * limit // Расчёт смещения для SQL-запроса на основе номера страницы и лимита
 
@@ -137,9 +178,20 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// UpdateUser updates a user's information.
+// @Summary Update a user's information
+// @Description Update a user's details by their ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body models.User true "User data"
+// @Success 204 "User updated successfully"
+// @Failure 400 {string} string "Invalid request"
+// @Failure 404 {string} string "User not found"
+// @Router /users/{id} [put]
 func UpdateUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		params := mux.Vars(r)
 		userID, err := strconv.Atoi(params["id"])
 		if err != nil {
@@ -189,9 +241,17 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// DeleteUser removes a user by ID.
+// @Summary Delete a user by ID
+// @Description Remove a user using their ID
+// @Tags users
+// @Param id path int true "User ID"
+// @Success 204 "User deleted successfully"
+// @Failure 400 {string} string "Invalid ID"
+// @Failure 404 {string} string "User not found"
+// @Router /users/{id} [delete]
 func DeleteUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		params := mux.Vars(r)
 		userID, err := strconv.Atoi(params["id"])
 		if err != nil {
