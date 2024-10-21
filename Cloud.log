@@ -25,3 +25,7 @@ ERROR: 2024/10/21 13:46:15 logger.go:82: Failed to ping database!dial tcp: looku
 INFO: 2024/10/21 13:49:05 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 14:16:26 logger.go:50: Server started on port 8081
 INFO: 2024/10/21 14:16:48 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:17:59 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:22:53 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:23:02 logger.go:50: Server started on port 8081
+INFO: 2024/10/21 14:23:49 logger.go:50: Server started on port 3000
