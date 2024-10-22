@@ -19,10 +19,10 @@ import (
 // @Failure 400 {object} ErrorResponse
 // @Router /user [post]
 func DBCreateUser(db *sql.DB, user *models.User) error {
-	query := `INSERT INTO users (name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned) 
-			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	query := `INSERT INTO users (name, phone, email, password, from_date_create, from_date_update) 
+			  VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 
-	err := db.QueryRow(query, user.Name, user.Phone, user.Email, user.Password, user.FromDateCreate, user.FromDateUpdate, user.IsDeleted, user.IsBanned).Scan(&user.ID)
+	err := db.QueryRow(query, user.Name, user.Phone, user.Email, user.Password, user.FromDateCreate, user.FromDateUpdate).Scan(&user.ID)
 
 	return err
 }
@@ -183,9 +183,9 @@ func DBDeleteUser(db *sql.DB, userID int) error {
 func FindUserByEmail(db *sql.DB, email string) (*models.User, error) {
 
 	var user models.User
-	query := `SELECT id, name, password FROM users WHERE email = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE email = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
 
-	err := db.QueryRow(query, email).Scan(&user.ID, &user.Name, &user.Password)
+	err := db.QueryRow(query, email).Scan(&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password, &user.FromDateCreate, &user.FromDateUpdate, &user.IsDeleted, &user.IsBanned)
 
 	return &user, err
 }
@@ -193,9 +193,9 @@ func FindUserByEmail(db *sql.DB, email string) (*models.User, error) {
 func FindUserByPhone(db *sql.DB, phone string) (*models.User, error) {
 
 	var user models.User
-	query := `SELECT id, name, password FROM users WHERE phone = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE phone = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
 
-	err := db.QueryRow(query, phone).Scan(&user.ID, &user.Name, &user.Password)
+	err := db.QueryRow(query, phone).Scan(&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password, &user.FromDateCreate, &user.FromDateUpdate, &user.IsDeleted, &user.IsBanned)
 
 	return &user, err
 }

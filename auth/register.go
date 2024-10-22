@@ -15,7 +15,6 @@ import (
 func RegisterUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// Логика регистрации пользователя
 		var user models.User
 
 		err := json.NewDecoder(r.Body).Decode(&user)
@@ -31,7 +30,7 @@ func RegisterUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Установка даты и создания обновления
+		// Установка даты и создания обновления, установка статуса IsDeleted и IsBanned
 		user.FromDateCreate = time.Now().Format(time.RFC3339)
 		user.FromDateUpdate = user.FromDateCreate
 

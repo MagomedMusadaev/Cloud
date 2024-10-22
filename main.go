@@ -9,6 +9,7 @@ import (
 	_ "Cloud/docs"
 	"Cloud/logger"
 	"Cloud/routes"
+	"context"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
@@ -26,24 +27,22 @@ func main() {
 
 	wg := sync.WaitGroup{}
 
+	// Загрузка переменных
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Ошибка загрузки .env файла")
+	}
+
 	// Инициализация логирования
 	logger.Logging()
 
-	// Инициализация переменных
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	hostDB := os.Getenv("POSTGRES_HOST")
-	portDB := os.Getenv("POSTGRES_PORT")
-	userDB := os.Getenv("POSTGRES_USER")
-	passwordDB := os.Getenv("POSTGRES_PASS")
-	dbnameDB := os.Getenv("POSTGRES_NAME")
-
 	// Подключение к базе данных
-	db := dataBase.ConnectDB(hostDB, portDB, userDB, passwordDB, dbnameDB)
+	db := dataBase.ConnectPostgresDB()
 	defer db.Close()
+
+	// Подключение к PostgresSQL
+	MongoDB := dataBase.ConnectMongoDB()
+	defer MongoDB.Disconnect(context.Background())
 
 	// Инициализация маршрутов
 	router := routes.InitializeRoutes(db)
@@ -69,3 +68,11 @@ func main() {
 	// Логируем остановку сервера
 	logger.Error("Server has stopped.")
 }
+
+// TODO залить
+//   Регистрация, логин, логаут(выход с аккаунта), отправка повторного кода, рефрештокен(jwt)
+//   подтверждение почты (google почта для отправки кода подтверждения)
+//   При удалении пользователя он не должен удаляться с базы, а переменная IsDeleted должен стать true и надо добавить проверку при авторизации пользователя на переменную IsDeleted, если она равна true, то вход не доступен
+//   Сделать хранение лого в базе данных (Mongo DB)
+//   Покрыть тестами проект (минимкм 60 %)
+//	 Изменить ЛОГИ чтобы они записывались ещё и в MongoDB
