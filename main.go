@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Инициализация маршрутов
-	router := routes.InitializeRoutes(db, app)
+	router := routes.InitializeRoutes(db, client, app)
 
 	// Инициализация порта сервера
 	portAPI := os.Getenv("SERVER_PORT")

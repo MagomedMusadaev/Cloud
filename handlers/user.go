@@ -5,9 +5,12 @@ import (
 	"Cloud/logger"
 	"Cloud/models"
 	"Cloud/utils"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strconv"
 	"time"
@@ -270,6 +273,40 @@ func DeleteUser(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func GetLogs() {
+// GetAllRequestLogs возвращает все записи логов из MongoDB
+func GetAllRequestLogs(client *mongo.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Получение коллекции
+		collection := client.Database("Cloud").Collection("logs")
 
+		// Чтение всех документов
+		cursor, err := collection.Find(context.TODO(), bson.M{})
+		if err != nil {
+			logger.Error("Failed to get logs: " + err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer cursor.Close(context.TODO())
+
+		// Определяем срез для хранения логов
+		var logs []models.RequestLog
+
+		// Выполняем запрос к коллекции
+		for cursor.Next(context.TODO()) {
+			var log models.RequestLog
+			if err = cursor.Decode(&log); err != nil {
+				logger.Error("Failed to decode log: " + err.Error())
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			logs = append(logs, log)
+		}
+
+		err = utils.SendExcelWithLogs(logs, w)
+		if err != nil {
+			logger.Error("Failed to save log in Excel file: " + err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
 }

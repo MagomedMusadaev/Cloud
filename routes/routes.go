@@ -7,13 +7,14 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
 // InitializeRoutes инициализирует маршруты приложения.
 // @Title API Routes
 // @Description Настраивает маршруты для операций с пользователями.
-func InitializeRoutes(db *sql.DB, app *internal.App) *mux.Router {
+func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.Router {
 	r := mux.NewRouter()
 
 	// Подключаем логирующее middleware
@@ -72,6 +73,15 @@ func InitializeRoutes(db *sql.DB, app *internal.App) *mux.Router {
 	// @Failure 400 {string} string "Ошибка при получении пользователей"
 	// @Router /users [get]
 	r.HandleFunc("/users", handlers.GetAllUsers(db)).Methods("GET")
+
+	// Получение всех логов запросов
+	// @Summary Получение всех логов запросов
+	// @Description Получает список всех логов запросов из системы.
+	// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+	// @Success 200 {file} file "Excel-файл с логами запросов"
+	// @Failure 400 {string} string "Ошибка при получении логов"
+	// @Router /logs [get]
+	r.HandleFunc("/logs", handlers.GetAllRequestLogs(client)).Methods("GET")
 
 	// Регистрация пользователя (закомментировано)
 	// @Summary Регистрация пользователя
