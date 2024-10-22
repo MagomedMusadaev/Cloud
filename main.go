@@ -7,6 +7,7 @@ package main
 import (
 	"Cloud/dataBase"
 	_ "Cloud/docs"
+	"Cloud/internal"
 	"Cloud/logger"
 	"Cloud/routes"
 	"context"
@@ -36,16 +37,21 @@ func main() {
 	// Инициализация логирования
 	logger.Logging()
 
-	// Подключение к базе данных
+	// Подключение к PostgresSQL
 	db := dataBase.ConnectPostgresDB()
 	defer db.Close()
 
-	// Подключение к PostgresSQL
-	MongoDB := dataBase.ConnectMongoDB()
-	defer MongoDB.Disconnect(context.Background())
+	// Подключение к MongoDB
+	client := dataBase.ConnectMongoDB()
+	defer client.Disconnect(context.Background())
+
+	// Создаем экземпляр App с логгером запросов
+	app := &internal.App{
+		RequestLogger: logger.NewRequestLogger(client, "Cloud", "logs"),
+	}
 
 	// Инициализация маршрутов
-	router := routes.InitializeRoutes(db)
+	router := routes.InitializeRoutes(db, app)
 
 	// Инициализация порта сервера
 	portAPI := os.Getenv("SERVER_PORT")

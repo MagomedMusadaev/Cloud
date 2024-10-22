@@ -3,6 +3,7 @@ package routes
 import (
 	"Cloud/auth"
 	"Cloud/handlers"
+	"Cloud/internal"
 	"database/sql"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -12,8 +13,11 @@ import (
 // InitializeRoutes инициализирует маршруты приложения.
 // @Title API Routes
 // @Description Настраивает маршруты для операций с пользователями.
-func InitializeRoutes(db *sql.DB) *mux.Router {
+func InitializeRoutes(db *sql.DB, app *internal.App) *mux.Router {
 	r := mux.NewRouter()
+
+	// Подключаем логирующее middleware
+	r.Use(auth.LoggingMiddleware(app))
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)   // Установите статус ответа

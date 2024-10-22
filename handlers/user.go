@@ -269,3 +269,7 @@ func DeleteUser(db *sql.DB) http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
+
+func GetLogs() {
+
+}

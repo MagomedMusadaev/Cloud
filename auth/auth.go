@@ -17,7 +17,8 @@ var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 func GenerateAccessToken(user models.User) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute) // Время действия токена - 15 минут
 	claims := &models.Claims{
-		Email: user.Email,
+		Email:  user.Email,
+		UserID: user.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
