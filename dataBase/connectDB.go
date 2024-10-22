@@ -20,6 +20,9 @@ type ErrorResponse struct {
 // ConnectPostgresDB устанавливает подключение к базе данных PostgreSQL и возвращает объект DB.
 // @Summary Подключение к базе данных PostgreSQL
 // @Description Устанавливает соединение с базой данных PostgreSQL с использованием строки подключения.
+// @Success 200 {string} string "Успешное подключение к PostgreSQL"
+// @Failure 500 {string} string "Ошибка подключения к PostgreSQL"
+// @Router /connect-postgres [get]
 func ConnectPostgresDB() *sql.DB {
 
 	hostPostgresDB := os.Getenv("POSTGRES_HOST")
@@ -53,15 +56,17 @@ func ConnectPostgresDB() *sql.DB {
 	return db
 }
 
+// ConnectMongoDB устанавливает подключение к базе данных MongoDB и возвращает объект клиента.
+// @Summary Подключение к базе данных MongoDB
+// @Description Устанавливает соединение с MongoDB с использованием переменных окружения для формирования строки подключения.
+// @Success 200 {string} string "Успешное подключение к MongoDB"
+// @Failure 500 {string} string "Ошибка подключения к MongoDB"
+// @Router /connect-mongo [get]
 func ConnectMongoDB() *mongo.Client {
 	// Чтение переменных окружения
 	hostMongoDB := os.Getenv("MONGO_HOST")
 	userMongoDB := os.Getenv("MONGO_USER")
 	passwordMongoDB := os.Getenv("MONGO_PASS")
-
-	if hostMongoDB == "" || userMongoDB == "" || passwordMongoDB == "" {
-		log.Fatal("Одна или несколько переменных окружения для MongoDB отсутствуют")
-	}
 
 	// Формирование строки подключения
 	mongoURI := fmt.Sprintf("mongodb+srv://%s:%s@%s", userMongoDB, passwordMongoDB, hostMongoDB)
@@ -69,19 +74,12 @@ func ConnectMongoDB() *mongo.Client {
 	// Настройка клиента
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
-	// Создание нового клиента
-	//TODO надо поменять метод, если он зачеркнут , значит он старый и его скоро могут удалить
-	client, err := mongo.NewClient(clientOptions)
-	if err != nil {
-		log.Fatal("Ошибка создания клиента MongoDB:", err)
-	}
-
 	// Контекст с тайм-аутом
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Подключение к MongoDB
-	err = client.Connect(ctx)
+	// Подключение к MongoDB с созданием клиента
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Fatal("Ошибка подключения к MongoDB:", err)
 	}
