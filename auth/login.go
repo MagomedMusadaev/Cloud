@@ -22,6 +22,7 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var loginReq LoginRequest
 		var user *models.User
+		var message string
 
 		//Декодирование JSON из тела запроса
 		err := json.NewDecoder(r.Body).Decode(&loginReq)
@@ -38,17 +39,29 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Проверяем какой из полей заполнен
+		// Проверяем какой из полей заполнен, и ищем пользователя
 		if loginReq.Email != "" {
-			user, err = dataBase.FindUserByEmail(db, loginReq.Email)
+			user, message, err = dataBase.FindUserByEmail(db, loginReq.Email)
 		}
 		if loginReq.Phone != "" {
-			user, err = dataBase.FindUserByPhone(db, loginReq.Phone)
+			user, message, err = dataBase.FindUserByPhone(db, loginReq.Phone)
 		}
 
-		if err != nil || user == nil {
-			logger.Error("Пользователь не найден: " + err.Error())
-			http.Error(w, "Пользователь не найден", http.StatusUnauthorized)
+		// Проверяем на ошибки и статус пользователя
+		if err != nil {
+			logger.Error("Ошибка при поиске пользователя: " + err.Error())
+			http.Error(w, "Ошибка при поиске пользователя", http.StatusInternalServerError)
+			return
+		}
+
+		// Если пользователь заблокирован или удалён, выводим сообщение
+		if message != "" {
+			logger.Error(message)
+			http.Error(w, message, http.StatusUnauthorized) // Ответ с соответствующим сообщением
+		}
+
+		// Если пользователь не найден стопаем функцию и выводим ответ
+		if user == nil {
 			return
 		}
 

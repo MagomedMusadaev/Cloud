@@ -136,10 +136,9 @@ func DBUpdateUser(db *sql.DB, user *models.User) error {
 		setClauses = append(setClauses, "password=$"+strconv.Itoa(len(args)+1))
 		args = append(args, user.Password)
 	}
-	if user.FromDateUpdate != "" {
-		setClauses = append(setClauses, "from_date_update=$"+strconv.Itoa(len(args)+1))
-		args = append(args, user.FromDateUpdate)
-	}
+
+	setClauses = append(setClauses, "from_date_update=$"+strconv.Itoa(len(args)+1))
+	args = append(args, user.FromDateUpdate)
 
 	// Добавляем статусы пользователя
 	if user.IsDeleted != false { // Предполагается, что false - это "не удален"
@@ -173,29 +172,74 @@ func DBUpdateUser(db *sql.DB, user *models.User) error {
 // @Failure 404 {object} ErrorResponse
 // @Router /user/{id} [delete]
 func DBDeleteUser(db *sql.DB, userID int) error {
-	query := `DELETE FROM users WHERE id = $1`
+	query := `UPDATE users SET is_deleted = true WHERE id = $1`
 
 	_, err := db.Exec(query, userID)
 
 	return err
 }
 
-func FindUserByEmail(db *sql.DB, email string) (*models.User, error) {
-
+func FindUserByEmail(db *sql.DB, email string) (*models.User, string, error) {
 	var user models.User
-	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE email = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE email = $1`
 
 	err := db.QueryRow(query, email).Scan(&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password, &user.FromDateCreate, &user.FromDateUpdate, &user.IsDeleted, &user.IsBanned)
 
-	return &user, err
+	// Проверка на ошибку запроса
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Пользователь с таким email не найден
+			logger.Error("Пользователь с данным email не найден: " + email)
+			return nil, "Пользователь с данным email не найден", nil
+		}
+		// Другая ошибка базы данных
+		logger.Error("Ошибка базы данных: " + err.Error())
+		return nil, "", err
+	}
+
+	// Проверка на заблокированного или удалённого пользователя
+	if user.IsBanned {
+		logger.Info("Пользователь заблокирован: " + email)
+		return nil, "Пользователь заблокирован", nil
+	}
+	if user.IsDeleted {
+		logger.Info("Пользователь удалён: " + email)
+		return nil, "Пользователь удалён", nil
+	}
+
+	// Если пользователь не заблокирован и не удалён, вернуть его данные
+	return &user, "", nil
 }
 
-func FindUserByPhone(db *sql.DB, phone string) (*models.User, error) {
+func FindUserByPhone(db *sql.DB, phone string) (*models.User, string, error) {
 
 	var user models.User
-	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE phone = $1 AND is_deleted = false` // разобраться с is_deleted и is_banned
+	query := `SELECT id, name, phone, email, password, from_date_create, from_date_update, is_deleted, is_banned FROM users WHERE phone = $1`
 
 	err := db.QueryRow(query, phone).Scan(&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password, &user.FromDateCreate, &user.FromDateUpdate, &user.IsDeleted, &user.IsBanned)
 
-	return &user, err
+	// Проверка на ошибку запроса
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Пользователь с таким phone не найден
+			logger.Error("Пользователь с данным phone не найден: " + phone)
+			return nil, "Пользователь с данным phone не найден", nil
+		}
+		// Другая ошибка базы данных
+		logger.Error("Ошибка базы данных: " + err.Error())
+		return nil, "", err
+	}
+
+	// Проверка на заблокированного или удалённого пользователя
+	if user.IsBanned {
+		logger.Info("Пользователь заблокирован: " + phone)
+		return nil, "Пользователь заблокирован", nil
+	}
+	if user.IsDeleted {
+		logger.Info("Пользователь удалён: " + phone)
+		return nil, "Пользователь удалён", nil
+	}
+
+	// Если пользователь не заблокирован и не удалён, вернуть его данные
+	return &user, "", nil
 }
