@@ -94,6 +94,10 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /register [post]
 	r.HandleFunc("/register", auth.RegisterUser(db)).Methods("POST")
 
+	r.HandleFunc("/confirm-email", auth.ConfirmEmailHandler(db)).Methods("POST")
+
+	r.HandleFunc("/resend-confirmation", auth.ResendConfirmationEmailHandler()).Methods("POST")
+
 	// Вход пользователя (закомментировано)
 	// @Summary Вход пользователя
 	// @Description Позволяет пользователю войти в систему.
