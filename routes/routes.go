@@ -21,8 +21,8 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	r.Use(auth.LoggingMiddleware(app))
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)   // Установите статус ответа
-		w.Write([]byte("Hello World")) // Запишите "Hello World" в тело ответа
+		w.WriteHeader(http.StatusOK)   // Установка статус ответа
+		w.Write([]byte("Hello World")) // Запись "Hello World" в тело ответа
 	}).Methods("GET")
 
 	// @Summary Создание нового пользователя
@@ -115,9 +115,16 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /refresh [post]
 	r.HandleFunc("/refresh-token", auth.RefreshTokenHandler).Methods("POST")
 
+	r.HandleFunc("/logout", auth.LogoutHandler(db)).Methods("POST")
+
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
-	//r.Handle("/protected", auth.JWTMiddleware(http.HandlerFunc(ProtectedHandler))).Methods("GET")
+	r.Handle("/protected", auth.JWTMiddleware(db, http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
 	return r
+}
+
+func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Доступ разрешен!"))
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // DBCreateUser создает нового пользователя в базе данных.
@@ -242,4 +243,26 @@ func FindUserByPhone(db *sql.DB, phone string) (*models.User, string, error) {
 
 	// Если пользователь не заблокирован и не удалён, вернуть его данные
 	return &user, "", nil
+}
+
+// Изменение времени истечения токена
+func UpdateTokenExpiration(db *sql.DB, expirationTime time.Time, userID int) error {
+
+	_, err := db.Exec("UPDATE users SET token_expires_at = $1 WHERE id = $2", expirationTime, userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Получение времени истечения токена из базы данных
+func GetTokenExpiration(db *sql.DB, userID int) (time.Time, error) {
+
+	var tokenExpiration time.Time
+	err := db.QueryRow("SELECT token_expires_at FROM users WHERE id = $1", userID).Scan(&tokenExpiration)
+	if err != nil {
+		logger.Error("Ошибка получения времени истечения токена из базы:" + err.Error())
+		return time.Time{}, err
+	}
+	return tokenExpiration, nil
 }

@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"Cloud/dataBase"
 	"Cloud/internal"
 	"Cloud/logger"
 	"Cloud/utils"
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,7 +19,7 @@ type ResponseWriterWrapper struct {
 }
 
 // Мидлвар для проверки токена
-func JWTMiddleware(next http.Handler) http.Handler {
+func JWTMiddleware(db *sql.DB, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Получение заголовка авторизации
 		authHeader := r.Header.Get("Authorization")
@@ -37,6 +39,24 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			logger.Error("Недействительный токен: " + err.Error())
 			http.Error(w, "Недействительный токен", http.StatusUnauthorized)
+			return
+		}
+
+		// Получение времени истечения токена из базы данных
+		tokenExpiration, err := dataBase.GetTokenExpiration(db, claims.UserID)
+		if err != nil {
+			logger.Error("Ошибка получения времени истечения токена из базы: " + err.Error())
+			http.Error(w, "Ошибка получения времени истечения токена", http.StatusInternalServerError)
+			return
+		}
+
+		tokenExpirationRounded := tokenExpiration.Truncate(time.Second)
+		claimsExpirationRounded := claims.ExpiresAt.UTC().Truncate(time.Second)
+
+		// Проверка на соответствие времени истечения
+		if !tokenExpirationRounded.Equal(claimsExpirationRounded) {
+			logger.Info("Токен истек, доступ запрещен.")
+			http.Error(w, "Токен истек", http.StatusUnauthorized)
 			return
 		}
 
