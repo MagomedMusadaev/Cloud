@@ -44,11 +44,10 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /user/{id} [get]
 	r.HandleFunc("/user/{id}", handlers.GetUser(db)).Methods("GET")
 
-	// Обновление информации о пользователе по ID
 	// @Summary Обновление пользователя
 	// @Description Обновляет информацию о пользователе.
-	// @Accept  json
-	// @Produce  json
+	// @Accept json
+	// @Produce json
 	// @Param id path int true "ID пользователя"
 	// @Param user body models.User true "Обновленный пользователь"
 	// @Success 204 {string} string "Пользователь успешно обновлен"
@@ -56,7 +55,6 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /user/{id} [put]
 	r.HandleFunc("/user/{id}", handlers.UpdateUser(db)).Methods("PUT")
 
-	// Удаление пользователя по ID
 	// @Summary Удаление пользователя
 	// @Description Удаляет пользователя из системы по его ID.
 	// @Param id path int true "ID пользователя"
@@ -65,16 +63,14 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /user/{id} [delete]
 	r.HandleFunc("/user/{id}", handlers.DeleteUser(db)).Methods("DELETE")
 
-	// Получение списка всех пользователей
 	// @Summary Получение всех пользователей
 	// @Description Получает список всех пользователей в системе.
-	// @Produce  json
+	// @Produce json
 	// @Success 200 {array} models.User "Список пользователей"
 	// @Failure 400 {string} string "Ошибка при получении пользователей"
 	// @Router /users [get]
 	r.HandleFunc("/users", handlers.GetAllUsers(db)).Methods("GET")
 
-	// Получение всех логов запросов
 	// @Summary Получение всех логов запросов
 	// @Description Получает список всех логов запросов из системы.
 	// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
@@ -83,33 +79,52 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /logs [get]
 	r.HandleFunc("/logs", handlers.GetAllRequestLogs(client)).Methods("GET")
 
-	// Регистрация пользователя (закомментировано)
 	// @Summary Регистрация пользователя
 	// @Description Регистрирует нового пользователя в системе.
-	// @Accept  json
-	// @Produce  json
+	// @Accept json
+	// @Produce json
 	// @Param user body models.User true "Пользователь"
 	// @Success 201 {string} string "Пользователь успешно зарегистрирован"
 	// @Failure 400 {string} string "Ошибка валидации"
 	// @Router /register [post]
 	r.HandleFunc("/register", auth.RegisterUser(db)).Methods("POST")
 
-	r.HandleFunc("/confirm-email", auth.ConfirmEmailHandler(db)).Methods("POST")
-
-	r.HandleFunc("/resend-confirmation", auth.ResendConfirmationEmailHandler()).Methods("POST")
-
-	// Вход пользователя (закомментировано)
 	// @Summary Вход пользователя
 	// @Description Позволяет пользователю войти в систему.
-	// @Accept  json
-	// @Produce  json
+	// @Accept json
+	// @Produce json
 	// @Param user body models.User true "Пользователь"
 	// @Success 200 {string} string "Пользователь успешно вошел"
 	// @Failure 400 {string} string "Ошибка при входе"
 	// @Router /login [post]
 	r.HandleFunc("/login", auth.LoginUser(db)).Methods("POST")
 
-	// Обновление токена
+	// @Summary Выход пользователя
+	// @Description Позволяет пользователю выйти из системы.
+	// @Success 200 {string} string "Пользователь успешно вышел"
+	// @Failure 400 {string} string "Ошибка при выходе"
+	// @Router /logout [post]
+	r.HandleFunc("/logout", auth.LogoutHandler(db)).Methods("POST")
+
+	// @Summary Подтверждение электронной почты
+	// @Description Подтверждает электронную почту пользователя.
+	// @Accept json
+	// @Produce json
+	// @Param email body string true "Электронная почта пользователя"
+	// @Param code body string true "Код подтверждения"
+	// @Success 200 {string} string "Электронная почта успешно подтверждена"
+	// @Failure 400 {string} string "Ошибка при подтверждении электронной почты"
+	// @Router /confirm-email [post]
+	r.HandleFunc("/confirm-email", auth.ConfirmEmailHandler(db)).Methods("POST")
+
+	// @Summary Повторная отправка письма с подтверждением
+	// @Description Позволяет повторно отправить письмо с подтверждением на электронную почту.
+	// @Param email body string true "Электронная почта пользователя"
+	// @Success 200 {string} string "Письмо с подтверждением успешно отправлено"
+	// @Failure 400 {string} string "Ошибка при повторной отправке"
+	// @Router /resend-confirmation [post]
+	r.HandleFunc("/resend-confirmation", auth.ResendConfirmationEmailHandler()).Methods("POST")
+
 	// @Summary Обновление access токена
 	// @Description Позволяет обновить access токен с использованием refresh токена.
 	// @Accept json
@@ -119,16 +134,20 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Router /refresh [post]
 	r.HandleFunc("/refresh-token", auth.RefreshTokenHandler).Methods("POST")
 
-	r.HandleFunc("/logout", auth.LogoutHandler(db)).Methods("POST")
+	// @Summary Защищенный маршрут
+	// @Description Позволяет доступ к защищенному ресурсу только с валидным JWT.
+	// @Produce json
+	// @Success 200 {string} string "Доступ разрешен"
+	// @Failure 401 {string} string "Недействительный токен"
+	// @Router /protected [get]
+	r.Handle("/protected", auth.JWTMiddleware(db, http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
-
-	r.Handle("/protected", auth.JWTMiddleware(db, http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
 	return r
 }
 
 func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK) // TODO Временная функция для проверки логики работы защищенного маршрута
 	w.Write([]byte("Доступ разрешен!"))
 }

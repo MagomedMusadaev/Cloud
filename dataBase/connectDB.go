@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// ErrorResponse представляет стандартный ответ с сообщением об ошибке
 type ErrorResponse struct {
 	Message string `json:"message"`
 }
@@ -21,7 +22,7 @@ type ErrorResponse struct {
 // @Summary Подключение к базе данных PostgreSQL
 // @Description Устанавливает соединение с базой данных PostgreSQL с использованием строки подключения.
 // @Success 200 {string} string "Успешное подключение к PostgreSQL"
-// @Failure 500 {string} string "Ошибка подключения к PostgreSQL"
+// @Failure 500 {object} ErrorResponse "Ошибка подключения к PostgreSQL"
 // @Router /connect-postgres [get]
 func ConnectPostgresDB() *sql.DB {
 
@@ -60,7 +61,7 @@ func ConnectPostgresDB() *sql.DB {
 // @Summary Подключение к базе данных MongoDB
 // @Description Устанавливает соединение с MongoDB с использованием переменных окружения для формирования строки подключения.
 // @Success 200 {string} string "Успешное подключение к MongoDB"
-// @Failure 500 {string} string "Ошибка подключения к MongoDB"
+// @Failure 500 {object} ErrorResponse "Ошибка подключения к MongoDB"
 // @Router /connect-mongo [get]
 func ConnectMongoDB() *mongo.Client {
 	// Чтение переменных окружения
