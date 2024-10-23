@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // User представляет пользователя в системе.
 // @Description Модель пользователя с основными полями.
 // @Title User
@@ -40,4 +42,6 @@ type User struct {
 	// @Description Флаг, указывающий, заблокирован ли пользователь
 	// @Example false
 	IsBanned bool `json:"isBanned"`
+
+	TokenExpiresAt time.Time `json:"token_expires_at"`
 }

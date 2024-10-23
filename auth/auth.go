@@ -4,6 +4,7 @@ import (
 	"Cloud/logger"
 	"Cloud/models"
 	"encoding/json"
+	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
 	"os"
@@ -14,7 +15,7 @@ import (
 var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 
 // Создание JWT токена
-func GenerateAccessToken(user models.User) (string, error) {
+func GenerateAccessToken(user models.User) (string, time.Time, error) {
 	expirationTime := time.Now().Add(15 * time.Minute) // Время действия токена - 15 минут
 	claims := &models.Claims{
 		Email:  user.Email,
@@ -25,7 +26,7 @@ func GenerateAccessToken(user models.User) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
-	return tokenString, err
+	return tokenString, expirationTime, err
 }
 
 // Проверка и валидация токена
@@ -35,9 +36,12 @@ func ValidateJWT(tokenStr string) (*models.Claims, error) {
 		return jwtKey, nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil {
 		logger.Error("Ошибка при парсинге токена: " + err.Error())
-		return nil, err
+	}
+	if !token.Valid {
+		logger.Error("Токен недействителен")
+		return nil, fmt.Errorf("токен недействителен")
 	}
 
 	return claims, nil
@@ -79,7 +83,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Если рефреш токен валиден, создаётся новый токен доступа с использованием email из рефреш токена. Функция GenerateJWT отвечает за создание нового
 	// access токена. Если происходит ошибка во время генерации, сервер возвращает ошибку 500 (Internal Server Error) и логирует это событие.
 	user := models.User{Email: claims.Email}
-	accessToken, err := GenerateAccessToken(user)
+	accessToken, _, err := GenerateAccessToken(user)
 	if err != nil {
 		logger.Error("Ошибка генерации access токена: " + err.Error())
 		http.Error(w, "Ошибка генерации токена", http.StatusInternalServerError)

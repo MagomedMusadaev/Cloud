@@ -4,10 +4,12 @@ import (
 	"Cloud/dataBase"
 	"Cloud/logger"
 	"Cloud/models"
+	"Cloud/utils"
 	"database/sql"
 	"encoding/json"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -58,10 +60,12 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 		if message != "" {
 			logger.Error(message)
 			http.Error(w, message, http.StatusUnauthorized) // Ответ с соответствующим сообщением
+			return
 		}
 
 		// Если пользователь не найден стопаем функцию и выводим ответ
 		if user == nil {
+			http.Error(w, "Пользователь не найден", http.StatusNotFound)
 			return
 		}
 
@@ -72,18 +76,27 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Генерация токенов
-		accessToken, err := GenerateAccessToken(*user)
+		// Генерация access токена
+		accessToken, expirationTime, err := GenerateAccessToken(*user)
 		if err != nil {
-			logger.Error("Ошибка создания токена: " + err.Error())
-			http.Error(w, "Ошибка создания токена", http.StatusInternalServerError)
+			logger.Error("Ошибка создания access токена: " + err.Error())
+			http.Error(w, "Ошибка создания access токена", http.StatusInternalServerError)
 			return
 		}
 
+		// Генерация refresh токена
 		refreshToken, err := GenerateRefreshToken(*user)
 		if err != nil {
 			logger.Error("Ошибка генерации refresh токена: " + err.Error())
 			http.Error(w, "Ошибка генерации refresh токена", http.StatusInternalServerError)
+			return
+		}
+
+		// Сохраняем время истечения access токена в базе данных
+		err = dataBase.UpdateTokenExpiration(db, expirationTime, user.ID)
+		if err != nil {
+			logger.Error("Ошибка сохранения времени истечения access токена: " + err.Error())
+			http.Error(w, "Ошибка сохранения времени истечения access токена", http.StatusInternalServerError)
 			return
 		}
 
@@ -93,12 +106,63 @@ func LoginUser(db *sql.DB) http.HandlerFunc {
 			Value:    refreshToken,
 			Expires:  time.Now().Add(30 * 24 * time.Hour), // Время жизни куки
 			HttpOnly: false,                               // Защита от доступа через JavaScript
-			Secure:   false,                               // Убедитесь, что вы используете HTTPS
+			Secure:   false,                               // Использование HTTPS
 			Path:     "/",                                 // Путь для куки
 		})
 
 		// Возвращаем access токен
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"access_token": accessToken})
+	}
+}
+
+// Логика выхода с аккаунта пользователя
+func LogoutHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Удаляем refresh токен из куки
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Expires:  time.Now().Add(-1 * time.Hour), // Устанавливаем истечение на прошлое
+			HttpOnly: false,
+			Secure:   false,
+			Path:     "/",
+		})
+		// r.URL.User.Username() // Эта строка не нужна для выхода
+
+		authHeader := r.Header.Get("Authorization")
+		// Проверка наличия токена
+		if authHeader == "" {
+			logger.Error("Отсутствует токен авторизации")
+			http.Error(w, "Отсутствует токен авторизации", http.StatusUnauthorized)
+			return
+		}
+
+		// Извлекаем токен
+		tokenParts := strings.Split(authHeader, "Bearer ")
+		if len(tokenParts) != 2 {
+			logger.Error("Недействительный токен")
+			http.Error(w, "Недействительный токен", http.StatusUnauthorized)
+			return
+		}
+		tokenStr := tokenParts[1]
+
+		// Извлекаем userID из токена
+		userID, err := utils.GetUserIDFromToken(tokenStr)
+		if err != nil {
+			logger.Error("Недействительный токен: " + err.Error())
+			http.Error(w, "Недействительный токен", http.StatusUnauthorized)
+			return
+		}
+
+		// Изменение времени истечения токена
+		err = dataBase.UpdateTokenExpiration(db, time.Now(), userID)
+		if err != nil {
+			logger.Error("Ошибка сохранения времени истечения access токена: " + err.Error())
+			http.Error(w, "Ошибка сохранения времени истечения access токена", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent) // Успешный логаут без контента
 	}
 }
