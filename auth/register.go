@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"Cloud/dataBase"
+	"Cloud/email"
 	"Cloud/logger"
 	"Cloud/models"
 	"Cloud/utils"
@@ -14,7 +14,6 @@ import (
 // Регистрация пользователя (не админ)
 func RegisterUser(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		var user models.User
 
 		err := json.NewDecoder(r.Body).Decode(&user)
@@ -30,28 +29,24 @@ func RegisterUser(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Установка даты и создания обновления, установка статуса IsDeleted и IsBanned
-		user.FromDateCreate = time.Now().Format(time.RFC3339)
-		user.FromDateUpdate = user.FromDateCreate
-
-		// Хеширование пароля перед сохранением
-		user.Password, err = utils.HashPassword(user.Password)
+		// Генерация кода подтверждения
+		confirmationCode := utils.GenRandCode()                         // создайте эту функцию для генерации кода
+		err = email.SendConfirmationEmail(user.Email, confirmationCode) // отправка кода на почту
 		if err != nil {
-			logger.Error("Failed to hash password: " + err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Error("Ошибка отправки письма: " + err.Error())
+			http.Error(w, "Ошибка отправки письма", http.StatusInternalServerError)
 			return
 		}
 
-		//Запрос к базе данных
-		err = dataBase.DBCreateUser(db, &user)
-		if err != nil {
-			logger.Error("Failed to create user: " + err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		// Сохраняем код, данные пользователя и время создания в TemporaryStore на 1 час
+		models.TemporaryStore[user.Email] = models.ConfirmationData{
+			Code:      confirmationCode,
+			User:      user,
+			CreatedAt: time.Now(),
 		}
 
-		// Успешный ответ
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode("User " + user.Name + " has been successfully created!")
+		// Ответ клиенту
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Код подтверждения отправлен на " + user.Email})
 	}
 }

@@ -1,8 +1,12 @@
 package auth
 
 import (
+	"Cloud/dataBase"
+	"Cloud/email"
 	"Cloud/logger"
 	"Cloud/models"
+	"Cloud/utils"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
@@ -92,4 +96,116 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"accessToken": accessToken})
+}
+
+func ConfirmEmailHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Email string `json:"email"`
+			Code  string `json:"code"`
+		}
+
+		// Декодируем запрос
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			logger.Error("Ошибка декодирования JSON: " + err.Error())
+			http.Error(w, "Неверный формат данных", http.StatusBadRequest)
+			return
+		}
+
+		// Проверяем, существует ли код для данного email
+		storedData, exists := models.TemporaryStore[request.Email]
+		if !exists {
+			logger.Error("Email не найден или код подтверждения просрочен: " + request.Email)
+			http.Error(w, "Email не найден или код подтверждения просрочен", http.StatusNotFound)
+			return
+		}
+
+		// Проверяем, истек ли срок действия кода подтверждения
+		if time.Since(storedData.CreatedAt) > time.Hour {
+			logger.Error("Код подтверждения для email просрочен: " + request.Email)
+			delete(models.TemporaryStore, request.Email) // Удаляем просроченный код
+			http.Error(w, "Код подтверждения просрочен", http.StatusUnauthorized)
+			return
+		}
+
+		// Проверяем соответствие кода
+		if storedData.Code != request.Code {
+			logger.Error("Неверный код подтверждения для email: " + request.Email)
+			http.Error(w, "Неверный код подтверждения", http.StatusUnauthorized)
+			return
+		}
+
+		// Достаём данные пользователя
+		user := storedData.User
+
+		// Установка даты создания и обновления пользователя
+		user.FromDateCreate = time.Now().Format(time.RFC3339)
+		user.FromDateUpdate = user.FromDateCreate
+
+		// Хеширование пароля перед сохранением
+		user.Password, err = utils.HashPassword(user.Password)
+		if err != nil {
+			logger.Error("Ошибка хеширования пароля: " + err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Сохраняем пользователя в базе данных
+		err = dataBase.DBCreateUser(db, &user)
+		if err != nil {
+			logger.Error("Ошибка создания пользователя: " + err.Error())
+			http.Error(w, "Не удалось создать пользователя", http.StatusInternalServerError)
+			return
+		}
+
+		// Удаляем код подтверждения из временного хранилища
+		delete(models.TemporaryStore, request.Email)
+
+		// Успешное подтверждение
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email " + request.Email + " успешно подтвержден!"})
+	}
+}
+
+func ResendConfirmationEmailHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Email string `json:"email"`
+		}
+
+		// Декодируем запрос
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			logger.Error("Ошибка декодирования JSON: " + err.Error())
+			http.Error(w, "Неверный формат данных", http.StatusBadRequest)
+			return
+		}
+
+		// Генерируем новый код подтверждения
+		code := utils.GenRandCode()
+
+		// Сохраняем новый код в TemporaryStore
+		models.TemporaryStore[request.Email] = struct {
+			Code      string
+			User      models.User
+			CreatedAt time.Time
+		}{
+			Code:      code,
+			User:      models.User{Email: code},
+			CreatedAt: time.Now(),
+		}
+
+		// Отправляем код на почту
+		err = email.SendConfirmationEmail(request.Email, code)
+		if err != nil {
+			logger.Error("Ошибка отправки email: " + err.Error())
+			http.Error(w, "Ошибка отправки email", http.StatusInternalServerError)
+			return
+		}
+
+		// Успешная отправка
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode("Повторный код подтверждения отправлен на email " + request.Email)
+	}
 }
