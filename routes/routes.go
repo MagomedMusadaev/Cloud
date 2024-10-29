@@ -4,6 +4,7 @@ import (
 	"Cloud/auth"
 	"Cloud/handlers"
 	"Cloud/internal"
+	"Cloud/kafka"
 	"database/sql"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -141,6 +142,8 @@ func InitializeRoutes(db *sql.DB, client *mongo.Client, app *internal.App) *mux.
 	// @Failure 401 {string} string "Недействительный токен"
 	// @Router /protected [get]
 	r.Handle("/protected", auth.JWTMiddleware(db, http.HandlerFunc(ProtectedHandler))).Methods("GET")
+
+	r.HandleFunc("/sort-file", kafka.SendToKafkaHandler) // работа с Kafka
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
