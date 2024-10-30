@@ -76,7 +76,7 @@ func ConnectMongoDB() *mongo.Client {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	// Контекст с тайм-аутом
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Подключение к MongoDB с созданием клиента

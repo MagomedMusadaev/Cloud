@@ -3,10 +3,11 @@ package kafka
 import (
 	"Cloud/logger"
 	"fmt"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/IBM/sarama"
 	"net/http"
 )
 
+// Обработчик для отправки запроса на Kafka
 func SendToKafkaHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -21,44 +22,34 @@ func SendToKafkaHandler(w http.ResponseWriter, r *http.Request) {
 
 // Функция для отправки сообщения в указанный топик Kafka
 func produceMessage(topic string, message string) {
+	// Конфигурация продюсера
+	config := sarama.NewConfig()
+	config.Producer.RequiredAcks = sarama.WaitForAll // Подтверждение после полной репликации
+	config.Producer.Retry.Max = 5                    // Повторные попытки при неудаче
+	config.Producer.Idempotent = true                // Включение идемпотентности
+	config.Producer.Return.Successes = true          // Ожидание подтверждения успешной отправки
+	config.Net.MaxOpenRequests = 1                   // Требуется для идемпотентного продюсера
 
-	// Создание нового продюсера с указанием адреса Kafka
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:9092",
-		//"acks":               "all",         // Подтверждение после полной репликации
-		//"retries":            3,             // Повторные попытки в случае неудачи
-		//"enable.idempotence": true,          // Включение идемпотентности для предотвращения дублирования
-	})
+	// Создание продюсера
+	producer, err := sarama.NewSyncProducer([]string{"kafka:9092"}, config)
 	if err != nil {
-		// Если произошла ошибка при создании продюсера, логируем ошибку и выходим из функции
-		logger.Error("Error creating producer:" + err.Error())
+		logger.Error("Error creating producer: " + err.Error())
 		return
 	}
 	defer producer.Close()
 
-	deliveryChan := make(chan kafka.Event)
-	defer close(deliveryChan)
+	// Создание сообщения
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.StringEncoder(message),
+	}
 
-	// Отправка сообщения в указанный топик
-	err = producer.Produce(&kafka.Message{
-		// Указание топика и партиции, в которую будет отправлено сообщение
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          []byte(message),
-	}, deliveryChan)
-
+	// Отправка сообщения и получение результата
+	partition, offset, err := producer.SendMessage(msg)
 	if err != nil {
-		logger.Error("Error producing message:" + err.Error())
+		logger.Error("Error producing message: " + err.Error())
 		return
 	}
 
-	// Ожидание события доставки и получение результата
-	e := <-deliveryChan
-	msg := e.(*kafka.Message) // Приведение типа события к сообщению Kafka
-
-	// Проверка на наличие ошибок при доставке сообщения
-	if msg.TopicPartition.Error != nil {
-		logger.Error("Delivery failed:" + msg.TopicPartition.Error.Error())
-	} else {
-		logger.Info(fmt.Sprintf("Message delivered to %v\n", msg.TopicPartition))
-	}
+	logger.Info(fmt.Sprintf("Message delivered to partition %d at offset %d\n", partition, offset))
 }
